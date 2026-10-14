@@ -1,0 +1,44 @@
+[
+  {
+    "cnic": "1560404318045",
+    "name": "Ahmad Khan",
+    "father_name": "Gul Hamad",
+    "dl_no": "110200123565",
+    "license_type": "M.CAR,LTV",
+    "issue_date": "14-01-2021",
+    "expiry_date": "13-01-2026",
+    "district": "Peshawar",
+    "idp": "Not Issued",
+    "initial_type_date": "M.CAR,LTV / 14-01-2021"
+  },
+  {
+    "cnic": "1710125068937",
+    "name": "",
+    "father_name": "",
+    "dl_no": "101971029159",
+    "license_type": "M/Cycle Only",
+    "issue_date": "23-01-2021",
+    "expiry_date": "22-01-2031",
+    "district": "PESHAWAR",
+    "idp": "Not Issued",
+    "initial_type_date": "M/Cycle Only / 23-01-2021",
+    "blood_group": "A(+ve)",
+    "gender": "MALE",
+    "address": "Mohallah Amir Khusro Khan, Utmanzai, Charsadda"
+  },
+  {
+    "cnic": "2170423658681",
+    "name": "AKHTAR HUSSAIN",
+    "father_name": "KHER MUHAMMAD",
+    "dl_no": "11000950348",
+    "license_type": "M/Cycle, LTV",
+    "issue_date": "08.06.2015",
+    "expiry_date": "07.06.2025",
+    "district": "Abbottabad",
+    "idp": "Not Issued",
+    "initial_type_date": "M/Cycle, LTV / 08.06.2015",
+    "blood_group": "AB+Ve",
+    "gender": "Male",
+    "address": "Po Sararogha Gargora Teh Sar Rarogha Distt S Waziristan"
+  }
+]

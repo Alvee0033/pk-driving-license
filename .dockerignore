@@ -1,0 +1,6 @@
+node_modules
+.next
+.git
+*.log
+WhatsApp*
+test_direct_call.png

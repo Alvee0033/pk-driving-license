@@ -1,0 +1,9 @@
+node_modules/
+.next/
+*.log
+.env.local
+.env
+WhatsApp*
+test_direct_call.png
+__pycache__/
+*.pyc
