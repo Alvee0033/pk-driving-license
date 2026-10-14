@@ -106,8 +106,8 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Nav
-  const [activeTab, setActiveTab] = useState<NavTab>('templates');
+  // Nav: default to Licences List as main page
+  const [activeTab, setActiveTab] = useState<NavTab>('list');
 
   // Studio Template & Form
   const [template, setTemplate] = useState<TemplateId>('2');
@@ -243,8 +243,11 @@ export default function AdminPage() {
 
   // Sync to database
   const syncToDatabase = useCallback(
-    async (data: LicenseData, manual = false) => {
-      if (!data.dl_no && !data.cnic) return;
+    async (data: LicenseData, manual = false, returnToList = false) => {
+      if (!data.dl_no && !data.cnic) {
+        if (manual) alert('Please provide at least a CNIC or Licence Number.');
+        return;
+      }
       try {
         await fetch('/api/licenses', {
           method: 'POST',
@@ -265,13 +268,16 @@ export default function AdminPage() {
             address: data.address,
           }),
         });
-        fetchRecords();
+        await fetchRecords();
         if (manual) {
           setSaveSuccess(true);
           setTimeout(() => setSaveSuccess(false), 2000);
+          if (returnToList) {
+            setActiveTab('list');
+          }
         }
-      } catch {
-        // Ignore
+      } catch (err) {
+        if (manual) alert('Failed to save licence to database. Please check connection.');
       }
     },
     [fetchRecords]
@@ -674,21 +680,6 @@ export default function AdminPage() {
           {/* Desktop 3-Tab Nav */}
           <div className="desktop-nav" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: 8 }}>
             <button
-              onClick={() => setActiveTab('templates')}
-              style={{
-                border: 'none',
-                background: activeTab === 'templates' ? '#ffffff' : 'transparent',
-                color: activeTab === 'templates' ? '#059669' : '#64748b',
-                fontWeight: activeTab === 'templates' ? 800 : 600,
-                fontSize: '0.8rem',
-                padding: '0.4rem 0.85rem',
-                borderRadius: 6,
-                cursor: 'pointer',
-              }}
-            >
-              Templates
-            </button>
-            <button
               onClick={() => setActiveTab('list')}
               style={{
                 border: 'none',
@@ -699,9 +690,32 @@ export default function AdminPage() {
                 padding: '0.4rem 0.85rem',
                 borderRadius: 6,
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
               }}
             >
-              List ({recordsList.length})
+              <i className="fas fa-list"></i>
+              <span>Licences List ({recordsList.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('templates')}
+              style={{
+                border: 'none',
+                background: activeTab === 'templates' ? '#ffffff' : 'transparent',
+                color: activeTab === 'templates' ? '#059669' : '#64748b',
+                fontWeight: activeTab === 'templates' ? 800 : 600,
+                fontSize: '0.8rem',
+                padding: '0.4rem 0.85rem',
+                borderRadius: 6,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}
+            >
+              <i className="fas fa-id-card"></i>
+              <span>Card Studio</span>
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -714,9 +728,13 @@ export default function AdminPage() {
                 padding: '0.4rem 0.85rem',
                 borderRadius: 6,
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
               }}
             >
-              Settings
+              <i className="fas fa-gear"></i>
+              <span>Settings</span>
             </button>
           </div>
 
@@ -763,6 +781,61 @@ export default function AdminPage() {
         {/* ================= TAB 1: TEMPLATES & FORM ================= */}
         {activeTab === 'templates' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {/* Top Navigation Bar: Back to List and Quick Save */}
+            <div
+              style={{
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                padding: '0.65rem 0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveTab('list')}
+                className="btn-clean"
+                style={{
+                  padding: '0.45rem 0.85rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  border: '1px solid #cbd5e1',
+                  background: '#f8fafc',
+                }}
+              >
+                <i className="fas fa-arrow-left"></i>
+                <span>← Back to Licences List</span>
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => syncToDatabase(cur, true, true)}
+                  className="btn-green"
+                  style={{
+                    padding: '0.45rem 1rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                  }}
+                >
+                  <i className="fas fa-floppy-disk"></i>
+                  <span>{saveSuccess ? '✓ Saved!' : 'Save & Return to List'}</span>
+                </button>
+              </div>
+            </div>
+
             {/* Top Selector: Templates Buttons */}
             <div
               style={{
@@ -1224,15 +1297,44 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => syncToDatabase(cur, true)}
-                    className="btn-clean"
-                    style={{ width: '100%', padding: '0.45rem', justifyContent: 'center' }}
-                  >
-                    <i className="fas fa-floppy-disk"></i>
-                    <span>{saveSuccess ? '✓ Saved to List' : 'Save to List'}</span>
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => syncToDatabase(cur, true, true)}
+                      className="btn-green"
+                      style={{
+                        width: '100%',
+                        padding: '0.55rem',
+                        justifyContent: 'center',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                      }}
+                    >
+                      <i className="fas fa-floppy-disk"></i>
+                      <span>{saveSuccess ? '✓ Saved to List!' : 'Save Licence & Return to List'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => syncToDatabase(cur, true, false)}
+                      className="btn-clean"
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem',
+                        justifyContent: 'center',
+                        fontSize: '0.78rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                      }}
+                    >
+                      <i className="fas fa-check"></i>
+                      <span>{saveSuccess ? '✓ Saved!' : 'Save & Keep Editing'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1331,49 +1433,80 @@ export default function AdminPage() {
 
         {/* ================= TAB 2: LIST (DATABASE) ================= */}
         {activeTab === 'list' && (
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '1.15rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.65rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Licences List</h3>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.15rem 0 0' }}>Stored records in public verification database.</p>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Driving Licences Database</h3>
+                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.2rem 0 0' }}>Manage verified records, create new licences, or open any licence in Card Studio.</p>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.35rem' }}>
-                <button type="button" onClick={fetchRecords} className="btn-clean">
-                  <i className={`fas fa-rotate ${recordsLoading ? 'fa-spin' : ''}`}></i> Refresh
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <button type="button" onClick={fetchRecords} className="btn-clean" style={{ padding: '0.5rem 0.85rem' }}>
+                  <i className={`fas fa-rotate ${recordsLoading ? 'fa-spin' : ''}`}></i>
+                  <span>Refresh</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setFormData((prev) => ({ ...prev, [template]: { ...EMPTY_DATA } }));
+                    setPhotos((p) => ({ ...p, [template]: null }));
+                    setSignatures((s) => ({ ...s, [template]: null }));
+                    setAuthSigs((a) => ({ ...a, [template]: null }));
+                    setCardPreview(null);
                     setActiveTab('templates');
                   }}
                   className="btn-green"
-                  style={{ padding: '0.45rem 0.75rem', fontSize: '0.78rem' }}
+                  style={{
+                    padding: '0.55rem 1.15rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                  }}
                 >
-                  + New
+                  <i className="fas fa-plus"></i>
+                  <span>+ Add New Licence</span>
                 </button>
               </div>
             </div>
 
             {/* Search Input */}
-            <div style={{ marginBottom: '0.85rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
               <input
                 type="text"
-                placeholder="Search name, licence number, CNIC, district..."
+                placeholder="Search by driver name, licence number, CNIC, district..."
                 value={recordsSearch}
                 onChange={(e) => setRecordsSearch(e.target.value)}
                 className="clean-input"
+                style={{ fontSize: '0.85rem', padding: '0.55rem 0.85rem' }}
               />
             </div>
 
             {/* List */}
             {recordsList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748b', fontSize: '0.85rem' }}>
-                No records found.
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b', fontSize: '0.88rem', background: '#f8fafc', borderRadius: 8, border: '1px dashed #cbd5e1' }}>
+                <i className="fas fa-id-card" style={{ fontSize: '2rem', color: '#94a3b8', marginBottom: '0.5rem' }}></i>
+                <div style={{ fontWeight: 700, color: '#334155' }}>No licence records found</div>
+                <div style={{ fontSize: '0.78rem', marginTop: '0.25rem' }}>Click the button below to create your first driving licence.</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, [template]: { ...EMPTY_DATA } }));
+                    setCardPreview(null);
+                    setActiveTab('templates');
+                  }}
+                  className="btn-green"
+                  style={{ marginTop: '0.85rem', padding: '0.5rem 1rem', fontSize: '0.82rem', fontWeight: 800 }}
+                >
+                  <i className="fas fa-plus"></i> + Add New Licence
+                </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                 {recordsList
                   .filter((r) => {
                     const q = recordsSearch.toLowerCase().trim();
@@ -1389,7 +1522,7 @@ export default function AdminPage() {
                     <div
                       key={i}
                       style={{
-                        padding: '0.75rem',
+                        padding: '0.85rem 1rem',
                         borderRadius: 8,
                         backgroundColor: '#fff',
                         border: '1px solid #e2e8f0',
@@ -1397,43 +1530,71 @@ export default function AdminPage() {
                         flexWrap: 'wrap',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        gap: '0.5rem',
+                        gap: '0.65rem',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                       }}
                     >
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>{rec.name}</span>
-                          <span style={{ fontSize: '0.65rem', background: '#ecfdf5', color: '#059669', padding: '0.1rem 0.35rem', borderRadius: 4, fontWeight: 700 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{rec.name || 'UNNAMED RECORD'}</span>
+                          <span style={{ fontSize: '0.68rem', background: '#ecfdf5', color: '#059669', padding: '0.15rem 0.45rem', borderRadius: 4, fontWeight: 700, border: '1px solid #a7f3d0' }}>
                             {rec.district || 'KPK'}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.15rem' }}>
-                          CNIC: <b>{rec.cnic}</b> &bull; DL: <b>{rec.dl_no}</b> &bull; {rec.license_type}
+                        <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '0.2rem' }}>
+                          CNIC: <b style={{ color: '#1e293b' }}>{rec.cnic}</b> &bull; DL: <b style={{ color: '#1e293b' }}>{rec.dl_no}</b> &bull; Category: {rec.license_type}
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                         <a
                           href={`/?search=${encodeURIComponent(rec.dl_no)}&sub=`}
                           target="_blank"
                           rel="noreferrer"
                           className="btn-clean"
-                          style={{ textDecoration: 'none', color: '#2563eb' }}
+                          style={{
+                            textDecoration: 'none',
+                            color: '#2563eb',
+                            padding: '0.4rem 0.75rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                          }}
                         >
-                          Verify ↗
+                          <i className="fas fa-shield-alt"></i>
+                          <span>Verify ↗</span>
                         </a>
                         <button
                           type="button"
                           onClick={() => loadRecordToStudio(rec)}
                           className="btn-green"
-                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                          style={{
+                            padding: '0.4rem 0.85rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                          }}
                         >
-                          Load
+                          <i className="fas fa-pen-to-square"></i>
+                          <span>Edit in Studio</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => deleteRecord(rec.dl_no)}
-                          style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '0.35rem 0.55rem', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem' }}
+                          style={{
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#b91c1c',
+                            padding: '0.4rem 0.65rem',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontSize: '0.78rem',
+                          }}
+                          title="Delete Record"
                         >
                           <i className="fas fa-trash"></i>
                         </button>
@@ -1541,26 +1702,6 @@ export default function AdminPage() {
         }}
       >
         <button
-          onClick={() => setActiveTab('templates')}
-          style={{
-            flex: 1,
-            border: 'none',
-            background: activeTab === 'templates' ? '#ecfdf5' : 'transparent',
-            color: activeTab === 'templates' ? '#059669' : '#64748b',
-            padding: '0.4rem 0.2rem',
-            borderRadius: 12,
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <i className="fas fa-id-card" style={{ fontSize: '1rem' }}></i>
-          <span style={{ fontSize: '0.62rem', fontWeight: activeTab === 'templates' ? 800 : 600 }}>Templates</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('list')}
           style={{
             flex: 1,
@@ -1577,7 +1718,27 @@ export default function AdminPage() {
           }}
         >
           <i className="fas fa-list" style={{ fontSize: '1rem' }}></i>
-          <span style={{ fontSize: '0.62rem', fontWeight: activeTab === 'list' ? 800 : 600 }}>List ({recordsList.length})</span>
+          <span style={{ fontSize: '0.62rem', fontWeight: activeTab === 'list' ? 800 : 600 }}>Licences ({recordsList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('templates')}
+          style={{
+            flex: 1,
+            border: 'none',
+            background: activeTab === 'templates' ? '#ecfdf5' : 'transparent',
+            color: activeTab === 'templates' ? '#059669' : '#64748b',
+            padding: '0.4rem 0.2rem',
+            borderRadius: 12,
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <i className="fas fa-id-card" style={{ fontSize: '1rem' }}></i>
+          <span style={{ fontSize: '0.62rem', fontWeight: activeTab === 'templates' ? 800 : 600 }}>Studio</span>
         </button>
 
         <button
