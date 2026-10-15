@@ -472,6 +472,62 @@ export default function VerificationPage() {
                 </>
               )}
 
+              {/* News / Domain Highlight Block */}
+              <section id="block-views-news-block" className="block block-views clearfix" style={{ marginTop: '10px', marginBottom: '25px' }}>
+                <div className="view view-news view-id-news view-display-id-block">
+                  <div
+                    className="view-content"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '10px',
+                      padding: '0 15px',
+                    }}
+                  >
+                    <div className="views-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        className="newIcon"
+                        style={{
+                          position: 'relative',
+                          width: '33px',
+                          height: '33px',
+                          display: 'inline-block',
+                          flexShrink: 0,
+                          backgroundImage: 'url("/images/news-01.png")',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'center',
+                          backgroundSize: 'contain',
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="newsDate" style={{ color: '#ea0000', fontSize: '13px', fontWeight: 600, paddingLeft: 0 }}>
+                          <span className="date-display-single">Jul 09, 2020</span>
+                        </div>
+                        <div className="newsTitle" style={{ paddingLeft: 0, marginBottom: 0, marginTop: '2px' }}>
+                          <a
+                            href={`https://${currentDomain}`}
+                            style={{ color: '#000000', fontWeight: 'bold', fontSize: '14px', textDecoration: 'none' }}
+                          >
+                            {currentDomain}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="more-link" style={{ margin: 0, paddingTop: 0 }}>
+                      <a
+                        href="#!readmore"
+                        onClick={(e) => e.preventDefault()}
+                        style={{ color: '#ea0000', fontWeight: 600, fontSize: '13px' }}
+                      >
+                        Read More
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
             </div>
           </div>
@@ -705,6 +761,107 @@ export default function VerificationPage() {
           </section>
         </div>
       </footer>
+
+      {/* Mobile Optimization Styles */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media (max-width: 768px) {
+              .topSection {
+                padding: 20px 10px !important;
+              }
+              .topSection .top_left,
+              .topSection .top_center,
+              .topSection .top_right {
+                width: 100% !important;
+                float: none !important;
+                clear: both !important;
+                margin-bottom: 22px;
+                text-align: center;
+              }
+              .staffWelfareWrap, .serviceUnitsWrap {
+                margin-left: 0 !important;
+                text-align: center;
+              }
+              .staffWelfareBullets ul, .serviceUnitsBullets ul {
+                padding-left: 0 !important;
+                list-style-position: inside;
+                text-align: center;
+              }
+              .serviceUnitsMore {
+                text-align: center !important;
+              }
+              .top_right {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+              }
+              #vscc_controls_gallery-block {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 280px !important;
+                margin: 0 auto !important;
+                position: relative !important;
+                height: 40px !important;
+              }
+              #vscc_controls_previous_gallery-block {
+                position: static !important;
+                float: none !important;
+                margin: 0 !important;
+                background-image: url("/images/left_arrow.png") !important;
+                background-repeat: no-repeat !important;
+                width: 30px !important;
+                height: 40px !important;
+                display: inline-block !important;
+                left: 0 !important;
+              }
+              #vscc_controls_next_gallery-block {
+                position: static !important;
+                float: none !important;
+                margin: 0 !important;
+                background-image: url("/images/right_arrow.png") !important;
+                background-repeat: no-repeat !important;
+                width: 30px !important;
+                height: 40px !important;
+                display: inline-block !important;
+                right: 0 !important;
+              }
+              #views_slideshow_cycle_teaser_section_gallery-block {
+                margin: 10px auto 0 !important;
+                width: 240px !important;
+                height: 75px !important;
+                position: relative !important;
+                overflow: hidden !important;
+              }
+              #views_slideshow_cycle_div_gallery-block_0 {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+              }
+              #views_slideshow_cycle_div_gallery-block_0 .galleryIcon {
+                margin: 0 4px !important;
+                width: auto !important;
+                float: none !important;
+                display: inline-block !important;
+              }
+              .footermenu {
+                text-align: center !important;
+                margin-bottom: 15px;
+              }
+              .copy1, .powered1 {
+                text-align: center !important;
+                float: none !important;
+                width: 100% !important;
+                margin-top: 6px;
+              }
+            }
+          `,
+        }}
+      />
     </div>
   );
 }
