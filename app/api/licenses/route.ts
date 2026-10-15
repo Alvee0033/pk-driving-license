@@ -117,6 +117,31 @@ export async function POST(req: NextRequest) {
       return (cnicClean && c === cnicClean) || (dlClean && d === dlClean);
     });
 
+    const cleanId = cnicClean || dlClean || `lic_${Date.now()}`;
+    const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
+    if (!existsSync(uploadsDir)) {
+      mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const saveBase64Image = (dataUrl: string | undefined, suffix: string) => {
+      if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.includes('base64,')) return null;
+      try {
+        const b64 = dataUrl.split('base64,')[1];
+        const buf = Buffer.from(b64, 'base64');
+        const imgPath = path.join(uploadsDir, `${cleanId}_${suffix}.png`);
+        writeFileSync(imgPath, buf);
+        return imgPath;
+      } catch {
+        return null;
+      }
+    };
+
+    if (body.photo) saveBase64Image(body.photo, 'photo');
+    if (body.signature) saveBase64Image(body.signature, 'sig');
+    if (body.auth) saveBase64Image(body.auth, 'auth');
+
+    const existingRecord = existingIdx >= 0 ? licenses[existingIdx] : null;
+
     const newRecord = {
       cnic: body.cnic || '',
       name: body.name || '',
@@ -131,6 +156,9 @@ export async function POST(req: NextRequest) {
       blood_group: body.blood_group || '',
       gender: body.gender || 'Male',
       address: body.address || '',
+      photo: body.photo !== undefined ? body.photo : (existingRecord ? existingRecord.photo : null),
+      signature: body.signature !== undefined ? body.signature : (existingRecord ? existingRecord.signature : null),
+      auth: body.auth !== undefined ? body.auth : (existingRecord ? existingRecord.auth : null),
     };
 
     if (existingIdx >= 0) {

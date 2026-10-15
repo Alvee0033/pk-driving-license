@@ -39,6 +39,46 @@ interface StoredLicenseRecord {
   blood_group?: string;
   gender?: string;
   address?: string;
+  photo?: string | null;
+  signature?: string | null;
+  auth?: string | null;
+}
+
+function compressImage(file: File, maxDim = 800, quality = 0.88): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const dataUrl = canvas.toDataURL(mimeType, quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 const SAMPLE_T1: LicenseData = {
@@ -153,6 +193,37 @@ export default function AdminPage() {
       setAdminPass(savedPass);
       setNewEmail(savedUser);
 
+      // Restore saved draft photos and signatures across page refreshes
+      try {
+        const draftPhoto1 = localStorage.getItem('dl_draft_photo_1');
+        const draftPhoto2 = localStorage.getItem('dl_draft_photo_2');
+        const draftSig1 = localStorage.getItem('dl_draft_sig_1');
+        const draftSig2 = localStorage.getItem('dl_draft_sig_2');
+        const draftAuth1 = localStorage.getItem('dl_draft_auth_1');
+        const draftAuth2 = localStorage.getItem('dl_draft_auth_2');
+
+        if (draftPhoto1 || draftPhoto2) {
+          setPhotos({
+            '1': draftPhoto1 || null,
+            '2': draftPhoto2 || null,
+          });
+        }
+        if (draftSig1 || draftSig2) {
+          setSignatures({
+            '1': draftSig1 || null,
+            '2': draftSig2 || null,
+          });
+        }
+        if (draftAuth1 || draftAuth2) {
+          setAuthSigs({
+            '1': draftAuth1 || null,
+            '2': draftAuth2 || null,
+          });
+        }
+      } catch (err) {
+        console.warn('Could not read draft media from localStorage:', err);
+      }
+
       const host = window.location.host;
       const origin = window.location.origin;
       setFormData((prev) => ({
@@ -243,12 +314,23 @@ export default function AdminPage() {
 
   // Sync to database
   const syncToDatabase = useCallback(
-    async (data: LicenseData, manual = false, returnToList = false) => {
+    async (
+      data: LicenseData,
+      manual = false,
+      returnToList = false,
+      optPhoto?: string | null,
+      optSig?: string | null,
+      optAuth?: string | null
+    ) => {
       if (!data.dl_no && !data.cnic) {
         if (manual) alert('Please provide at least a CNIC or Licence Number.');
         return;
       }
       try {
+        const photoToSave = optPhoto !== undefined ? optPhoto : photos[template];
+        const sigToSave = optSig !== undefined ? optSig : signatures[template];
+        const authToSave = optAuth !== undefined ? optAuth : authSigs[template];
+
         await fetch('/api/licenses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -266,6 +348,9 @@ export default function AdminPage() {
             blood_group: data.blood_group,
             gender: data.gender,
             address: data.address,
+            photo: photoToSave,
+            signature: sigToSave,
+            auth: authToSave,
           }),
         });
         await fetchRecords();
@@ -280,7 +365,7 @@ export default function AdminPage() {
         if (manual) alert('Failed to save licence to database. Please check connection.');
       }
     },
-    [fetchRecords]
+    [fetchRecords, photos, signatures, authSigs, template]
   );
 
   // Card generation
@@ -321,7 +406,7 @@ export default function AdminPage() {
         if (json.imageBase64) {
           setCardPreview(json.imageBase64);
         }
-        syncToDatabase(activeData);
+        syncToDatabase(activeData, false, false, activePhoto, activeSig, activeAuth);
       } catch (err: any) {
         if (err.name === 'AbortError') return;
         console.error('Render error:', err);
@@ -349,28 +434,46 @@ export default function AdminPage() {
     });
   };
 
-  // Upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, slot: 'photo' | 'signature' | 'auth') => {
+  // Upload handler with client-side compression and localStorage draft persistence
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, slot: 'photo' | 'signature' | 'auth') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const url = event.target?.result as string;
-      if (slot === 'photo') setPhotos((p) => ({ ...p, [template]: url }));
-      if (slot === 'signature') setSignatures((s) => ({ ...s, [template]: url }));
-      if (slot === 'auth') setAuthSigs((a) => ({ ...a, [template]: url }));
+    try {
+      const maxDim = slot === 'photo' ? 800 : 600;
+      const quality = slot === 'photo' ? 0.88 : 0.95;
+      const url = await compressImage(file, maxDim, quality);
+
+      const nextPhotos = { ...photos };
+      const nextSigs = { ...signatures };
+      const nextAuths = { ...authSigs };
+
+      if (slot === 'photo') {
+        nextPhotos[template] = url;
+        setPhotos(nextPhotos);
+        try { localStorage.setItem(`dl_draft_photo_${template}`, url); } catch {}
+      } else if (slot === 'signature') {
+        nextSigs[template] = url;
+        setSignatures(nextSigs);
+        try { localStorage.setItem(`dl_draft_sig_${template}`, url); } catch {}
+      } else if (slot === 'auth') {
+        nextAuths[template] = url;
+        setAuthSigs(nextAuths);
+        try { localStorage.setItem(`dl_draft_auth_${template}`, url); } catch {}
+      }
 
       triggerGeneration(
         template,
         formData[template],
-        slot === 'photo' ? url : photos[template],
-        slot === 'signature' ? url : signatures[template],
-        slot === 'auth' ? url : authSigs[template]
+        nextPhotos[template],
+        nextSigs[template],
+        nextAuths[template]
       );
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    } catch (err) {
+      console.error('Image upload/compression error:', err);
+    } finally {
+      e.target.value = '';
+    }
   };
 
   // High-Res Download (PDF or PNG)
@@ -436,8 +539,28 @@ export default function AdminPage() {
     };
 
     setFormData((prev) => ({ ...prev, [targetT]: loadedData }));
+
+    const rPhoto = rec.photo || null;
+    const rSig = rec.signature || null;
+    const rAuth = rec.auth || null;
+
+    setPhotos((p) => ({ ...p, [targetT]: rPhoto }));
+    setSignatures((s) => ({ ...s, [targetT]: rSig }));
+    setAuthSigs((a) => ({ ...a, [targetT]: rAuth }));
+
+    try {
+      if (rPhoto) localStorage.setItem(`dl_draft_photo_${targetT}`, rPhoto);
+      else localStorage.removeItem(`dl_draft_photo_${targetT}`);
+
+      if (rSig) localStorage.setItem(`dl_draft_sig_${targetT}`, rSig);
+      else localStorage.removeItem(`dl_draft_sig_${targetT}`);
+
+      if (rAuth) localStorage.setItem(`dl_draft_auth_${targetT}`, rAuth);
+      else localStorage.removeItem(`dl_draft_auth_${targetT}`);
+    } catch {}
+
     setActiveTab('templates');
-    triggerGeneration(targetT, loadedData, null, null, null);
+    triggerGeneration(targetT, loadedData, rPhoto, rSig, rAuth);
   };
 
   // Delete record
@@ -903,6 +1026,11 @@ export default function AdminPage() {
                     setPhotos((p) => ({ ...p, [template]: null }));
                     setSignatures((s) => ({ ...s, [template]: null }));
                     setAuthSigs((a) => ({ ...a, [template]: null }));
+                    try {
+                      localStorage.removeItem(`dl_draft_photo_${template}`);
+                      localStorage.removeItem(`dl_draft_sig_${template}`);
+                      localStorage.removeItem(`dl_draft_auth_${template}`);
+                    } catch {}
                     triggerGeneration(template, sample, null, null, null);
                   }}
                   className="btn-clean"
@@ -916,6 +1044,11 @@ export default function AdminPage() {
                     setPhotos((p) => ({ ...p, [template]: 'none' }));
                     setSignatures((s) => ({ ...s, [template]: 'none' }));
                     setAuthSigs((a) => ({ ...a, [template]: 'none' }));
+                    try {
+                      localStorage.removeItem(`dl_draft_photo_${template}`);
+                      localStorage.removeItem(`dl_draft_sig_${template}`);
+                      localStorage.removeItem(`dl_draft_auth_${template}`);
+                    } catch {}
                     setCardPreview(null);
                   }}
                   className="btn-clean"
@@ -1187,6 +1320,7 @@ export default function AdminPage() {
                             type="button"
                             onClick={() => {
                               setPhotos((p) => ({ ...p, [template]: null }));
+                              try { localStorage.removeItem(`dl_draft_photo_${template}`); } catch {}
                               triggerGeneration(template, cur, null, signatures[template], authSigs[template]);
                             }}
                             style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.2rem 0.35rem', borderRadius: 4, cursor: 'pointer', fontSize: '0.65rem' }}
@@ -1223,6 +1357,7 @@ export default function AdminPage() {
                             type="button"
                             onClick={() => {
                               setAuthSigs((a) => ({ ...a, [template]: null }));
+                              try { localStorage.removeItem(`dl_draft_auth_${template}`); } catch {}
                               triggerGeneration(template, cur, photos[template], signatures[template], null);
                             }}
                             style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.2rem 0.35rem', borderRadius: 4, cursor: 'pointer', fontSize: '0.65rem' }}
@@ -1260,6 +1395,7 @@ export default function AdminPage() {
                               type="button"
                               onClick={() => {
                                 setSignatures((s) => ({ ...s, [template]: null }));
+                                try { localStorage.removeItem(`dl_draft_sig_${template}`); } catch {}
                                 triggerGeneration(template, cur, photos[template], null, authSigs[template]);
                               }}
                               style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.2rem 0.35rem', borderRadius: 4, cursor: 'pointer', fontSize: '0.65rem' }}
@@ -1452,6 +1588,11 @@ export default function AdminPage() {
                     setPhotos((p) => ({ ...p, [template]: null }));
                     setSignatures((s) => ({ ...s, [template]: null }));
                     setAuthSigs((a) => ({ ...a, [template]: null }));
+                    try {
+                      localStorage.removeItem(`dl_draft_photo_${template}`);
+                      localStorage.removeItem(`dl_draft_sig_${template}`);
+                      localStorage.removeItem(`dl_draft_auth_${template}`);
+                    } catch {}
                     setCardPreview(null);
                     setActiveTab('templates');
                   }}
@@ -1534,15 +1675,49 @@ export default function AdminPage() {
                         boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                       }}
                     >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{rec.name || 'UNNAMED RECORD'}</span>
-                          <span style={{ fontSize: '0.68rem', background: '#ecfdf5', color: '#059669', padding: '0.15rem 0.45rem', borderRadius: 4, fontWeight: 700, border: '1px solid #a7f3d0' }}>
-                            {rec.district || 'KPK'}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '0.2rem' }}>
-                          CNIC: <b style={{ color: '#1e293b' }}>{rec.cnic}</b> &bull; DL: <b style={{ color: '#1e293b' }}>{rec.dl_no}</b> &bull; Category: {rec.license_type}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        {rec.photo ? (
+                          <img
+                            src={rec.photo}
+                            alt={rec.name}
+                            style={{
+                              width: 38,
+                              height: 46,
+                              objectFit: 'cover',
+                              borderRadius: 4,
+                              border: '1px solid #cbd5e1',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 38,
+                              height: 46,
+                              borderRadius: 4,
+                              border: '1px dashed #cbd5e1',
+                              background: '#f8fafc',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#94a3b8',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <i className="fas fa-user" style={{ fontSize: '0.9rem' }}></i>
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{rec.name || 'UNNAMED RECORD'}</span>
+                            <span style={{ fontSize: '0.68rem', background: '#ecfdf5', color: '#059669', padding: '0.15rem 0.45rem', borderRadius: 4, fontWeight: 700, border: '1px solid #a7f3d0' }}>
+                              {rec.district || 'KPK'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '0.2rem' }}>
+                            CNIC: <b style={{ color: '#1e293b' }}>{rec.cnic}</b> &bull; DL: <b style={{ color: '#1e293b' }}>{rec.dl_no}</b> &bull; Category: {rec.license_type}
+                          </div>
                         </div>
                       </div>
 
