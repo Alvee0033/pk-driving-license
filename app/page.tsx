@@ -28,23 +28,25 @@ const DEFAULT_RECORD: LicenseRecord = {
   initial_type_date: 'M.CAR,LTV / 14-01-2021',
 };
 
-const GALLERY_ITEMS = [
-  { src: '/images/WhatsApp Image 2022-07-21 at 3.21.45 PM (1).jpeg', alt: 'Gallery 1' },
-  { src: '/images/WhatsApp Image 2022-07-16 at 11.01.43 AM.jpeg', alt: 'Gallery 2' },
-  { src: '/images/Presentation1_0.jpg', alt: 'Gallery 3' },
-  { src: '/images/WhatsApp Image 2022-07-05 at 4.00.52 PM.jpeg', alt: 'Gallery 4' },
-  { src: '/images/WhatsApp Image 2022-07-02 at 11.50.50 AM.jpeg', alt: 'Gallery 5' },
-  { src: '/images/Crime 1.jpg', alt: 'Gallery 6' },
-  { src: '/images/Head Money.jpg', alt: 'Gallery 7' },
-  { src: '/images/1000.jpg', alt: 'Gallery 8' },
-  { src: '/images/100.jpg', alt: 'Gallery 9' },
-  { src: '/images/web 6.jpg', alt: 'Gallery 10' },
-  { src: '/images/c-1.jpg', alt: 'Gallery 11' },
-  { src: '/images/delegation_0.jpg', alt: 'Gallery 12' },
-  { src: '/images/A-1_0.jpg', alt: 'Gallery 13' },
-  { src: '/images/Events 6_0.jpg', alt: 'Gallery 14' },
-  { src: '/images/web 2.jpg', alt: 'Gallery 15' },
-  { src: '/images/Shuhada_2.jpg', alt: 'Gallery 16' },
+const GALLERY_SLIDES: (({ src: string; alt: string } | null)[])[] = [
+  // Slide 0: on main site, slot 0 is empty, slot 1 has the first WhatsApp image
+  [null, { src: '/images/gallery_wa1.jpeg', alt: 'Gallery' }],
+  // Slide 1
+  [{ src: '/images/gallery_wa2.jpeg', alt: 'Gallery' }, { src: '/images/Presentation1_0.jpg', alt: 'Gallery' }],
+  // Slide 2
+  [{ src: '/images/gallery_wa3.jpeg', alt: 'Gallery' }, { src: '/images/gallery_wa4.jpeg', alt: 'Gallery' }],
+  // Slide 3
+  [{ src: '/images/crime_1.jpg', alt: 'Gallery' }, { src: '/images/head_money.jpg', alt: 'Gallery' }],
+  // Slide 4
+  [{ src: '/images/1000.jpg', alt: 'Gallery' }, { src: '/images/100.jpg', alt: 'Gallery' }],
+  // Slide 5
+  [{ src: '/images/web_6.jpg', alt: 'Gallery' }, { src: '/images/c-1.jpg', alt: 'Gallery' }],
+  // Slide 6
+  [{ src: '/images/delegation_0.jpg', alt: 'Gallery' }, { src: '/images/A-1_0.jpg', alt: 'Gallery' }],
+  // Slide 7
+  [{ src: '/images/events_6.jpg', alt: 'Gallery' }, { src: '/images/web_2.jpg', alt: 'Gallery' }],
+  // Slide 8
+  [{ src: '/images/Shuhada_2.jpg', alt: 'Gallery' }, null],
 ];
 
 export default function VerificationPage() {
@@ -52,26 +54,31 @@ export default function VerificationPage() {
   const [record, setRecord] = useState<LicenseRecord | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
-  const [galleryPairIdx, setGalleryPairIdx] = useState(0);
+  const [gallerySlideIdx, setGallerySlideIdx] = useState(0);
   const [isGalleryHovered, setIsGalleryHovered] = useState(false);
+  const [currentDomain, setCurrentDomain] = useState('dlivkpk.com');
 
-  const totalPairs = Math.ceil(GALLERY_ITEMS.length / 2);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.host) {
+      setCurrentDomain(window.location.host);
+    }
+  }, []);
 
-  // Auto-play carousel every 3.5s unless hovered
+  // Auto-play gallery slideshow every 3.5s unless hovered
   useEffect(() => {
     if (isGalleryHovered) return;
     const timer = setInterval(() => {
-      setGalleryPairIdx((prev) => (prev + 1) % totalPairs);
+      setGallerySlideIdx((prev) => (prev + 1) % GALLERY_SLIDES.length);
     }, 3500);
     return () => clearInterval(timer);
-  }, [isGalleryHovered, totalPairs]);
+  }, [isGalleryHovered]);
 
   const handlePrevGallery = () => {
-    setGalleryPairIdx((prev) => (prev > 0 ? prev - 1 : totalPairs - 1));
+    setGallerySlideIdx((prev) => (prev > 0 ? prev - 1 : GALLERY_SLIDES.length - 1));
   };
 
   const handleNextGallery = () => {
-    setGalleryPairIdx((prev) => (prev + 1) % totalPairs);
+    setGallerySlideIdx((prev) => (prev + 1) % GALLERY_SLIDES.length);
   };
 
   useEffect(() => {
@@ -465,25 +472,7 @@ export default function VerificationPage() {
                 </>
               )}
 
-              {/* News Block */}
-              <section id="block-views-news-block" className="block block-views clearfix">
-                <div className="view view-news view-id-news view-display-id-block">
-                  <div className="view-content">
-                    <div className="views-row views-row-1 views-row-odd views-row-first views-row-last">
-                      <div className="views-field views-field-nothing">
-                        <span className="field-content">
-                          <div className="col-sm-12 row">
-                            <div className=" newIcon"></div>
-                            <div className=" newsDate"><span className="date-display-single">Jul 09, 2020</span></div>
-                          </div>
-                          <div className="col-sm-10 row newsTitle"><a href="#">ptpkp.gov.pk</a></div>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="more-link"> <a href="#">Read More </a></div>
-                </div>
-              </section>
+
             </div>
           </div>
 
@@ -496,7 +485,7 @@ export default function VerificationPage() {
                     {/* Vehicle Theft */}
                     <div className="theftWrap col-sm-4 rtecenter" style={{ textAlign: 'center' }}>
                       <div className="thefticon">
-                        <a href="https://ptpkp-gov.net/vehicle_theft" target="_blank" rel="noopener noreferrer">
+                        <a href="#!crime" onClick={(e) => e.preventDefault()}>
                           <img
                             src="/images/vehicle_theft.svg"
                             alt="Vehicle Theft"
@@ -507,7 +496,7 @@ export default function VerificationPage() {
                         </a>
                       </div>
                       <div className="theftTitle">
-                        <a href="https://ptpkp-gov.net/vehicle_theft" target="_blank" rel="noopener noreferrer" style={{ color: '#ea0000' }}>
+                        <a href="#!crime" onClick={(e) => e.preventDefault()} style={{ color: '#ea0000' }}>
                           Vehicle Theft
                         </a>
                       </div>
@@ -517,7 +506,7 @@ export default function VerificationPage() {
                     {/* Narcotics */}
                     <div className="narcoticsWrap col-sm-4 rtecenter" style={{ textAlign: 'center' }}>
                       <div className="narcoticsicon">
-                        <a href="https://ptpkp-gov.net/narcotics" target="_blank" rel="noopener noreferrer">
+                        <a href="#!crime" onClick={(e) => e.preventDefault()}>
                           <img
                             src="/images/narcotics.svg"
                             alt="Narcotics"
@@ -528,7 +517,7 @@ export default function VerificationPage() {
                         </a>
                       </div>
                       <div className="narcoticsTitle">
-                        <a href="https://ptpkp-gov.net/narcotics" target="_blank" rel="noopener noreferrer" style={{ color: '#ea0000' }}>
+                        <a href="#!crime" onClick={(e) => e.preventDefault()} style={{ color: '#ea0000' }}>
                           Narcotics
                         </a>
                       </div>
@@ -538,7 +527,7 @@ export default function VerificationPage() {
                     {/* Cattle Rustling */}
                     <div className="cattleWrap col-sm-4 rtecenter" style={{ textAlign: 'center' }}>
                       <div className="cattleicon">
-                        <a href="https://ptpkp-gov.net/cattle_rustling" target="_blank" rel="noopener noreferrer">
+                        <a href="#!crime" onClick={(e) => e.preventDefault()}>
                           <img
                             src="/images/cattle_rustling.svg"
                             alt="Cattle Rustling"
@@ -549,7 +538,7 @@ export default function VerificationPage() {
                         </a>
                       </div>
                       <div className="cattleTitle">
-                        <a href="https://ptpkp-gov.net/cattle_rustling" target="_blank" rel="noopener noreferrer" style={{ color: '#ea0000' }}>
+                        <a href="#!crime" onClick={(e) => e.preventDefault()} style={{ color: '#ea0000' }}>
                           Cattle Rustling
                         </a>
                       </div>
@@ -628,186 +617,64 @@ export default function VerificationPage() {
 
           <div className="top_right col-sm-6">
             <div className="region region-top-right">
-              {/* Header with Title and Control Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 4px' }}>
-                <h2 className="Gallerytitle" style={{ margin: 0, padding: 0, fontSize: '18px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>
-                  Gallery
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={handlePrevGallery}
-                    aria-label="Previous Images"
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #ccc',
-                      borderRadius: '3px',
-                      color: '#ea0000',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-                    }}
-                  >
-                    <span>&lsaquo;</span> <span>PREV</span>
-                  </button>
-                  <span style={{ fontSize: '11px', color: '#fff', fontWeight: 600, padding: '0 2px' }}>
-                    {galleryPairIdx + 1}/{totalPairs}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleNextGallery}
-                    aria-label="Next Images"
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #ccc',
-                      borderRadius: '3px',
-                      color: '#ea0000',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-                    }}
-                  >
-                    <span>NEXT</span> <span>&rsaquo;</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Carousel Container */}
-              <section
-                id="block-views-gallery-block"
-                className="block block-views clearfix"
-                onMouseEnter={() => setIsGalleryHovered(true)}
-                onMouseLeave={() => setIsGalleryHovered(false)}
-                style={{ position: 'relative' }}
-              >
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  {/* Left Side Arrow Button */}
-                  <button
-                    type="button"
-                    onClick={handlePrevGallery}
-                    aria-label="Previous Slide"
-                    style={{
-                      position: 'absolute',
-                      left: '0px',
-                      zIndex: 10,
-                      background: '#ea0000',
-                      color: '#fff',
-                      border: '2px solid #fff',
-                      borderRadius: '50%',
-                      width: '26px',
-                      height: '26px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      lineHeight: 1,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                      padding: 0,
-                    }}
-                  >
-                    &#8249;
-                  </button>
-
-                  {/* 2-Image Array Slide */}
-                  <div
-                    className="row"
-                    style={{
-                      width: '100%',
-                      margin: '0',
-                      padding: '0 22px',
-                      display: 'flex',
-                      transition: 'opacity 0.25s ease',
-                    }}
-                  >
-                    {GALLERY_ITEMS.slice(galleryPairIdx * 2, galleryPairIdx * 2 + 2).map((item, i) => (
-                      <div key={`${galleryPairIdx}-${i}`} className="col-xs-6" style={{ padding: '0 4px', textAlign: 'center' }}>
-                        <div
-                          style={{
-                            background: '#fff',
-                            padding: '3px',
-                            borderRadius: '3px',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <img
-                            src={item.src}
-                            alt={item.alt}
-                            style={{
-                              width: '100%',
-                              height: '75px',
-                              objectFit: 'cover',
-                              borderRadius: '2px',
-                              display: 'block',
-                            }}
-                          />
+              <h2 className="Gallerytitle">Gallery</h2>
+              <section id="block-views-gallery-block" className="block block-views clearfix">
+                <div className="view view-gallery view-id-gallery view-display-id-block">
+                  <div className="view-content">
+                    <div className="skin-default">
+                      <div className="views-slideshow-controls-top clearfix">
+                        <div id="vscc_controls_gallery-block" className="vscc-controls vscc_controls">
+                          <span
+                            id="vscc_controls_previous_gallery-block"
+                            className="vscc_controls_previous"
+                            onClick={handlePrevGallery}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <a href="#!slide" onClick={(e) => { e.preventDefault(); handlePrevGallery(); }}>previous</a>
+                          </span>
+                          <span
+                            id="vscc_controls_next_gallery-block"
+                            className="vscc_controls_next"
+                            onClick={handleNextGallery}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <a href="#!slide" onClick={(e) => { e.preventDefault(); handleNextGallery(); }}>next</a>
+                          </span>
                         </div>
                       </div>
-                    ))}
+                      <div
+                        id="views_slideshow_cycle_main_gallery-block"
+                        className="views_slideshow_cycle_main views_slideshow_main"
+                        onMouseEnter={() => setIsGalleryHovered(true)}
+                        onMouseLeave={() => setIsGalleryHovered(false)}
+                      >
+                        <div id="views_slideshow_cycle_teaser_section_gallery-block" className="views-slideshow-cycle-main-frame views_slideshow_cycle_teaser_section">
+                          <div id="views_slideshow_cycle_div_gallery-block_0" className="views-slideshow-cycle-main-frame-row views_slideshow_cycle_slide views_slideshow_slide views-row-1 views-row-odd">
+                            {GALLERY_SLIDES[gallerySlideIdx].map((item, i) => (
+                              <div key={`${gallerySlideIdx}-${i}`} className="views-slideshow-cycle-main-frame-row-item views-row col-sm-6 galleryIcon rtecenter">
+                                <div className="views-field views-field-field-gallery-image">
+                                  <div className="field-content">
+                                    {item ? (
+                                      <a href="#!slide" onClick={(e) => e.preventDefault()}>
+                                        <img
+                                          typeof="foaf:Image"
+                                          src={item.src}
+                                          width="100"
+                                          height="56"
+                                          alt={item.alt}
+                                          style={{ width: 100, height: 56, objectFit: 'cover' }}
+                                        />
+                                      </a>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Right Side Arrow Button */}
-                  <button
-                    type="button"
-                    onClick={handleNextGallery}
-                    aria-label="Next Slide"
-                    style={{
-                      position: 'absolute',
-                      right: '0px',
-                      zIndex: 10,
-                      background: '#ea0000',
-                      color: '#fff',
-                      border: '2px solid #fff',
-                      borderRadius: '50%',
-                      width: '26px',
-                      height: '26px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      lineHeight: 1,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                      padding: 0,
-                    }}
-                  >
-                    &#8250;
-                  </button>
-                </div>
-
-                {/* Dot Indicators */}
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', marginTop: '8px' }}>
-                  {Array.from({ length: totalPairs }).map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setGalleryPairIdx(idx)}
-                      aria-label={`Go to pair ${idx + 1}`}
-                      style={{
-                        width: galleryPairIdx === idx ? '16px' : '7px',
-                        height: '7px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        padding: 0,
-                        background: galleryPairIdx === idx ? '#ea0000' : 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                    />
-                  ))}
                 </div>
               </section>
             </div>
@@ -832,8 +699,8 @@ export default function VerificationPage() {
               </div>
             </div>
             <div className="col-sm-12 copyPowered" style={{ marginTop: 15 }}>
-              <div className="col-sm-6 copy1">© 2018 ptpkp.gov.pk</div>
-              <div className="col-sm-6 powered1" style={{ textAlign: 'right' }}>Powered by: <a href="#">ptpkp.gov.pk</a></div>
+              <div className="col-sm-6 copy1">© 2018 {currentDomain}</div>
+              <div className="col-sm-6 powered1" style={{ textAlign: 'right' }}>Powered by: <a href={`https://${currentDomain}`}>{currentDomain}</a></div>
             </div>
           </section>
         </div>

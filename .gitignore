@@ -3,7 +3,8 @@ node_modules/
 *.log
 .env.local
 .env
-WhatsApp*
+*.ogg
+*.zip
 test_direct_call.png
 __pycache__/
 *.pyc
